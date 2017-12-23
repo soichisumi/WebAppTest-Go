@@ -5,12 +5,11 @@ import (
 	"net/http"
 	"log"
 	"trace"
-	"github.com/stretchr/objx"
 )
 
 type room struct {
 	// 他のクライアントに転送するためのメッセージを保持するチャネル
-	forward chan *message
+	forward chan []byte
 
 	join  chan *client
 	leave chan *client
@@ -22,7 +21,7 @@ type room struct {
 
 func newRoom() *room {
 	return &room{
-		forward: make(chan *message),
+		forward: make(chan []byte),
 		join:    make(chan *client),
 		leave:   make(chan *client),
 		clients: make(map[*client]bool),
@@ -41,7 +40,7 @@ func (r *room) run() {
 			close(client.send)
 			r.tracer.Trace("クライアントが退室しました")
 		case msg := <-r.forward:
-			r.tracer.Trace("メッセージを受信しました:", msg.Message)
+			r.tracer.Trace("メッセージを受信しました:", string(msg))
 			for client := range r.clients {
 				select {
 				case client.send <- msg:
@@ -70,15 +69,10 @@ func (r *room) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		log.Fatal("ServeHTTP:", err)
 		return
 	}
-	authCookie, err := req.Cookie("auth")
-	if err != nil {
-		log.Fatal("クッキーの取得に失敗しました：", err)
-	}
 	client := &client{
-		socket:   socket,
-		send:     make(chan *message, messageBufferSize),
-		room:     r,
-		userData: objx.MustFromBase64(authCookie.Value),
+		socket: socket,
+		send:   make(chan []byte, messageBufferSize),
+		room:   r,
 	}
 	r.join <- client
 	defer func() { r.leave <- client }()

@@ -29,8 +29,7 @@ WebSocketを使ったチャットアプリケーション
             alert("エラー：websocket接続がおこなわれていません。");
             return false;
         }
-        socket.send(msgBox.val());
-        msgBox.val("");
+        socket.send(JSON.stringify({"Message": msgBox.val()}));
         return false;
     });
     if(!window["WebSocket"]){
@@ -41,7 +40,13 @@ WebSocketを使ったチャットアプリケーション
             alert("接続を完了しました");
         }
         socket.onmessage=function(e){
-            messages.append($("<li>").text(e.data))
+            var msg = eval("(" + e.data + ")");
+            messages.append(
+                    $("<li>").append(
+                            $("<string>").text(msg.Name + ": "),
+                            $("<span>").text(msg.Message)
+                    )
+            )
         }
     }
     })
