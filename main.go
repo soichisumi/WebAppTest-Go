@@ -49,7 +49,7 @@ func main() {
 		github.New(*githubCId, *githubSecret, "http://localhost:8080/auth/callback/github"),
 		google.New(*googleCId, *googleSecret, "http://localhost:8080/auth/callback/google"),
 	)
-	r := newRoom()
+	r := newRoom(UseGravatar)
 	http.Handle("/chat", MustAuth(&templateHandler{filename: "chat.html"}))
 	http.Handle("/login", &templateHandler{filename: "login.html"})
 	http.HandleFunc("/auth/", loginHandler)
